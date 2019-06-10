@@ -29,7 +29,7 @@ var_dump($class);
 // App\ClassName
 ```
 
-### Find in file path
+### Find in directory path
 ```php
 <?php 
 
