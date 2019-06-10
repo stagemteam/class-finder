@@ -36,6 +36,7 @@ var_dump($class);
 use Stagem\ClassFinder\ClassFinder;
 
 $classes = (new ClassFinder())->getClassesInDir('/path/to/App/Model');
+
 var_dump($classes);
 /**
  *  array (
