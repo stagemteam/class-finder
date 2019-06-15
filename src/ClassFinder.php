@@ -21,41 +21,31 @@ class ClassFinder
 {
     public function getClassFromFile($file)
     {
-        $fp = fopen($file, 'r');
-        $class = $namespace = $buffer = '';
-        $i = 0;
-        while (!$class) {
-            if (feof($fp)) {
-                break;
-            }
-            $buffer .= fread($fp, 512);
-            $tokens = token_get_all($buffer);
-            if (strpos($buffer, '{') === false) {
+        $content = file_get_contents($file);
+        $tokens = token_get_all($content);
+        $fqcns = '';
+        $namespace = '';
+        for ($index = 0; isset($tokens[$index]); $index++) {
+            if (!isset($tokens[$index][0])) {
                 continue;
             }
-            for (; $i < count($tokens); $i++) {
-                if ($tokens[$i][0] === T_NAMESPACE) {
-                    for ($j = $i + 1; $j < count($tokens); $j++) {
-                        if ($tokens[$j][0] === T_STRING) {
-                            $namespace .= '\\' . $tokens[$j][1];
-                        } else if ($tokens[$j] === '{' || $tokens[$j] === ';') {
-                            break;
-                        }
-                    }
+            if (T_NAMESPACE === $tokens[$index][0]) {
+                $index += 2; // Skip namespace keyword and whitespace
+                while (isset($tokens[$index]) && is_array($tokens[$index])) {
+                    $namespace .= $tokens[$index++][1];
                 }
-                if ($tokens[$i][0] === T_CLASS) {
-                    for ($j = $i + 1; $j < count($tokens); $j++) {
-                        if ($tokens[$j] === '{') {
-                            $class = $tokens[$i + 2][1];
-                        }
-                    }
-                }
+            }
+            if (T_CLASS === $tokens[$index][0] && T_WHITESPACE === $tokens[$index + 1][0] && T_STRING === $tokens[$index + 2][0]) {
+                $index += 2; // Skip class keyword and whitespace
+                $fqcns = $namespace.'\\'.$tokens[$index][1];
+
+                # break if you have one class per file (psr-4 compliant)
+                # otherwise you'll need to handle class constants (Foo::class)
+                break;
             }
         }
 
-        fclose($fp);
-
-        return $namespace . '\\' . $class;
+        return $fqcns;
     }
 
     public function getClassesInDir($dir)
